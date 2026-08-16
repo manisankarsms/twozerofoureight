@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048 - The Ultimate Number Puzzle Game | BenbeLabs</title>
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #141423;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Navigation - Solid Clean Styling */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 5%;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: #1a1a2e;
+            border-bottom: 1px solid #2d2d44;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s;
+        }
+
+        .logo-container:hover .logo-img {
+            transform: scale(1.08) rotate(-3deg);
+        }
+
+        .logo-text {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #f2b179, #edc22e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-tag {
+            font-size: 0.7rem;
+            background: #25253e;
+            color: #f2b179;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-weight: 600;
+            border: 1px solid #3d3d5c;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #ccc;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #f2b179;
+        }
+
+        /* Hero Section - Solid Clean Layout */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 85vh;
+            text-align: center;
+            padding: 7rem 5% 3rem;
+            position: relative;
+            background: #141423;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #25253e;
+            border: 1px solid #3d3d5c;
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: #f2b179;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .hero-app-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 28px;
+            object-fit: cover;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+            margin-bottom: 1.5rem;
+            border: 3px solid #2d2d44;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero h1 {
+            font-size: 3.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.15;
+            letter-spacing: -0.5px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(90deg, #f2b179, #edc22e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #aaa;
+            max-width: 620px;
+            margin: 0 auto 2.2rem;
+            line-height: 1.6;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1.2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.95rem 2.2rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #f2b179, #edc22e);
+            color: #1a1a2e;
+            box-shadow: 0 6px 20px rgba(242, 177, 121, 0.3);
+        }
+
+        .btn-secondary {
+            border: 2px solid #f2b179;
+            color: #f2b179;
+            background: #1e1e32;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(242, 177, 121, 0.4);
+        }
+
+        /* Web Game Section - Solid UI */
+        .game-section {
+            padding: 4rem 5%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            background: #18182b;
+            border-top: 1px solid #2d2d44;
+            border-bottom: 1px solid #2d2d44;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .game-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .game-header h2 span {
+            background: linear-gradient(90deg, #f2b179, #edc22e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-header p {
+            color: #888;
+            font-size: 1rem;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 440px;
+            background: #1e1e32;
+            border: 1px solid #2d2d44;
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .game-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+        }
+
+        .score-boxes {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .score-box {
+            background: #2d2d44;
+            border: 1px solid #3d3d5c;
+            border-radius: 12px;
+            padding: 0.4rem 1rem;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .score-box .label {
+            font-size: 0.7rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .score-box .val {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .action-btn {
+            background: linear-gradient(90deg, #f2b179, #edc22e);
+            border: none;
+            color: #1a1a2e;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 2048 Grid Board */
+        .board-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%; /* Square aspect ratio */
+            background: #2d2d44;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+            touch-action: none;
+        }
+
+        .board-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .grid-cell {
+            background: #3d3d5c;
+            border-radius: 10px;
+        }
+
+        .tiles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+        }
+
+        .tile {
+            position: absolute;
+            width: calc((100% - 50px) / 4);
+            height: calc((100% - 50px) / 4);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            font-size: 1.8rem;
+            transition: transform 0.12s ease-in-out, background-color 0.12s;
+            user-select: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Tile Color Scale */
+        .tile-2 { background: #eee4da; color: #776e65; }
+        .tile-4 { background: #ede0c8; color: #776e65; }
+        .tile-8 { background: #f2b179; color: #f9f6f2; }
+        .tile-16 { background: #f59563; color: #f9f6f2; }
+        .tile-32 { background: #f67c5f; color: #f9f6f2; }
+        .tile-64 { background: #f65e3b; color: #f9f6f2; }
+        .tile-128 { background: #edcf72; color: #f9f6f2; font-size: 1.5rem; }
+        .tile-256 { background: #edcc61; color: #f9f6f2; font-size: 1.5rem; }
+        .tile-512 { background: #edc850; color: #f9f6f2; font-size: 1.5rem; }
+        .tile-1024 { background: #edc53f; color: #f9f6f2; font-size: 1.2rem; }
+        .tile-2048 { background: #edc22e; color: #f9f6f2; font-size: 1.2rem; }
+        .tile-super { background: #3c3a32; color: #f9f6f2; font-size: 1.1rem; }
+
+        .tile-pop {
+            animation: pop 0.15s ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        /* Overlay */
+        .game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2ee6;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .game-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .game-overlay h3 {
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #f2b179, #edc22e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-overlay p {
+            color: #ccc;
+            margin-bottom: 1.5rem;
+        }
+
+        .controls-hint {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .controls-hint kbd {
+            background: #2d2d44;
+            border: 1px solid #3d3d5c;
+            border-radius: 4px;
+            padding: 0.1rem 0.4rem;
+            font-family: inherit;
+            color: #f2b179;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 5%;
+            text-align: center;
+            background: #141423;
+        }
+
+        .features h2 {
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .features h2 span {
+            background: linear-gradient(90deg, #f2b179, #edc22e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: #1e1e32;
+            border: 1px solid #2d2d44;
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            transition: transform 0.3s, border-color 0.3s, background 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #f2b179;
+            background: #25253e;
+        }
+
+        .feature-card .icon {
+            font-size: 2.8rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.8rem;
+            color: #fff;
+        }
+
+        .feature-card p {
+            color: #aaa;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* Download Section */
+        .download {
+            padding: 6rem 5%;
+            text-align: center;
+            background: #18182b;
+            border-top: 1px solid #2d2d44;
+            border-bottom: 1px solid #2d2d44;
+        }
+
+        .download h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .download p {
+            color: #aaa;
+            margin-bottom: 2.5rem;
+            font-size: 1.1rem;
+        }
+
+        .store-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .store-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 2rem;
+            background: #25253e;
+            border: 1px solid #3d3d5c;
+            border-radius: 16px;
+            text-decoration: none;
+            color: #fff;
+            transition: background 0.3s, transform 0.3s, border-color 0.3s;
+        }
+
+        .store-btn:hover {
+            background: #2d2d44;
+            transform: translateY(-4px);
+            border-color: #f2b179;
+        }
+
+        .store-btn .store-icon {
+            font-size: 2.2rem;
+        }
+
+        .store-btn .store-text {
+            text-align: left;
+        }
+
+        .store-btn .store-text small {
+            display: block;
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        .store-btn .store-text span {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3.5rem 5%;
+            text-align: center;
+            background: #141423;
+        }
+
+        .footer-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #aaa;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: #f2b179;
+        }
+
+        .footer-copy {
+            color: #666;
+            font-size: 0.88rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.6rem;
+            }
+            .hero p {
+                font-size: 1rem;
+            }
+            .nav-links {
+                display: none;
+            }
+            .features h2, .download h2, .game-header h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <a href="#" class="logo-container">
+            <img src="assets/icon.png" alt="2048 Logo" class="logo-img">
+            <span class="logo-text">2048</span>
+            <span class="logo-tag">BenbeLabs</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#play">Play Demo</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#download">Download</a></li>
+            <li><a href="privacy.html">Privacy</a></li>
+            <li><a href="terms.html">Terms</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <img src="assets/icon.png" alt="2048 App Icon" class="hero-app-logo">
+            <div class="hero-badge">🎮 Official Mobile & Web Release</div>
+            <h1>Master the <span>2048 Challenge</span></h1>
+            <p>Join tiles, combine numbers, and reach the legendary 2048 tile. Pure strategy, silky-smooth controls, and endless puzzle enjoyment.</p>
+            <div class="cta-buttons">
+                <a href="#play" class="btn btn-primary">▶ Play Live Demo</a>
+                <a href="#download" class="btn btn-secondary">📱 Get Mobile App</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Web Game Section -->
+    <section class="game-section" id="play">
+        <div class="game-header">
+            <h2>Play <span>2048</span> Now</h2>
+            <p>Use your arrow keys, WASD, or swipe gestures to slide tiles</p>
+        </div>
+
+        <div class="game-container">
+            <div class="game-top-bar">
+                <div class="score-boxes">
+                    <div class="score-box">
+                        <div class="label">SCORE</div>
+                        <div class="val" id="score-val">0</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="label">BEST</div>
+                        <div class="val" id="best-val">0</div>
+                    </div>
+                </div>
+                <div class="game-controls">
+                    <button class="action-btn" id="undo-btn" title="Undo Last Move">↩ Undo</button>
+                    <button class="action-btn" id="restart-btn">⚡ New</button>
+                </div>
+            </div>
+
+            <div class="board-wrapper" id="board-wrapper">
+                <div class="board-grid">
+                    <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+                    <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+                    <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+                    <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
+                </div>
+                <div class="tiles-container" id="tiles-container"></div>
+                
+                <div class="game-overlay" id="game-overlay">
+                    <h3 id="overlay-title">Game Over!</h3>
+                    <p id="overlay-msg">No more available moves.</p>
+                    <button class="action-btn" id="overlay-restart-btn">Try Again</button>
+                </div>
+            </div>
+
+            <div class="controls-hint">
+                Controls: <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Swipe on Touchscreen
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <h2>Why Play <span>2048 by BenbeLabs</span></h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon">🧩</div>
+                <h3>Classic 4x4 Grid</h3>
+                <p>Pure mathematical puzzle perfection. Simple rules with endless depth and strategic possibilities.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">⚡</div>
+                <h3>Responsive Controls</h3>
+                <p>Silky-smooth swipe and keyboard controls tuned for desktop browsers and mobile touchscreens alike.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🏆</div>
+                <h3>High Score Persistence</h3>
+                <p>Track your local record automatically. Challenge yourself to beat your personal best score every session.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🚫</div>
+                <h3>Optional Ad-Free Pass</h3>
+                <p>Enjoy uninterrupted gameplay with the optional <code>com.benbelabs.twozerofoureight.remove_ads</code> pass.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🎨</div>
+                <h3>Modern Aesthetics</h3>
+                <p>Vibrant solid design with adaptive tile hues, glowing milestones, and crisp typography.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📱</div>
+                <h3>Play Anywhere</h3>
+                <p>Available for web, iOS, and Android devices. Pick up right where you left off anytime, anywhere.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="download" id="download">
+        <h2>Get the Mobile App</h2>
+        <p>Download 2048 for free on your iOS and Android devices today.</p>
+        <div class="store-buttons">
+            <a href="#" class="store-btn">
+                <div class="store-icon">🍎</div>
+                <div class="store-text">
+                    <small>Download on the</small>
+                    <span>App Store</span>
+                </div>
+            </a>
+            <a href="#" class="store-btn">
+                <div class="store-icon">▶️</div>
+                <div class="store-text">
+                    <small>Get it on</small>
+                    <span>Google Play</span>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-logo">
+            <img src="assets/icon.png" alt="2048 Logo">
+            <span style="font-weight: 700; color: #f2b179;">2048 by BenbeLabs</span>
+        </div>
+        <div class="footer-links">
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms & Conditions</a>
+            <a href="app-ads.txt" target="_blank">app-ads.txt</a>
+            <a href="mailto:benbelabs@gmail.com">Contact Us</a>
+        </div>
+        <p class="footer-copy">&copy; 2026 BenbeLabs / 2048. All rights reserved.</p>
+    </footer>
+
+    <!-- Interactive 2048 Web Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const SIZE = 4;
+            let board = Array(SIZE).fill(null).map(() => Array(SIZE).fill(0));
+            let score = 0;
+            let bestScore = parseInt(localStorage.getItem('2048_best_score') || '0', 10);
+            let history = null;
+
+            const tilesContainer = document.getElementById('tiles-container');
+            const scoreVal = document.getElementById('score-val');
+            const bestVal = document.getElementById('best-val');
+            const undoBtn = document.getElementById('undo-btn');
+            const restartBtn = document.getElementById('restart-btn');
+            const overlay = document.getElementById('game-overlay');
+            const overlayTitle = document.getElementById('overlay-title');
+            const overlayMsg = document.getElementById('overlay-msg');
+            const overlayRestartBtn = document.getElementById('overlay-restart-btn');
+            const boardWrapper = document.getElementById('board-wrapper');
+
+            bestVal.textContent = bestScore;
+
+            function initGame() {
+                board = Array(SIZE).fill(null).map(() => Array(SIZE).fill(0));
+                score = 0;
+                history = null;
+                updateUndoButton();
+                overlay.classList.remove('active');
+                addRandomTile();
+                addRandomTile();
+                renderBoard();
+            }
+
+            function addRandomTile() {
+                const emptyCells = [];
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (board[r][c] === 0) emptyCells.push({r, c});
+                    }
+                }
+                if (emptyCells.length > 0) {
+                    const {r, c} = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    board[r][c] = Math.random() < 0.9 ? 2 : 4;
+                }
+            }
+
+            function saveHistory() {
+                history = {
+                    board: board.map(row => [...row]),
+                    score: score
+                };
+                updateUndoButton();
+            }
+
+            function undoMove() {
+                if (!history) return;
+                board = history.board.map(row => [...row]);
+                score = history.score;
+                history = null;
+                updateUndoButton();
+                overlay.classList.remove('active');
+                renderBoard();
+            }
+
+            function updateUndoButton() {
+                undoBtn.disabled = !history;
+            }
+
+            function renderBoard() {
+                tilesContainer.innerHTML = '';
+                scoreVal.textContent = score;
+                if (score > bestScore) {
+                    bestScore = score;
+                    localStorage.setItem('2048_best_score', bestScore);
+                    bestVal.textContent = bestScore;
+                }
+
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        const val = board[r][c];
+                        if (val > 0) {
+                            const tile = document.createElement('div');
+                            const tileClass = val <= 2048 ? `tile-${val}` : 'tile-super';
+                            tile.className = `tile ${tileClass} tile-pop`;
+                            tile.textContent = val;
+
+                            tile.style.top = `calc(${r * 25}% + ${r * 2.5}px)`;
+                            tile.style.left = `calc(${c * 25}% + ${c * 2.5}px)`;
+
+                            tilesContainer.appendChild(tile);
+                        }
+                    }
+                }
+            }
+
+            function move(direction) {
+                let moved = false;
+                const prevBoard = board.map(row => [...row]);
+                const prevScore = score;
+
+                function slideAndMerge(line) {
+                    let filtered = line.filter(x => x !== 0);
+                    let res = [];
+                    for (let i = 0; i < filtered.length; i++) {
+                        if (i < filtered.length - 1 && filtered[i] === filtered[i + 1]) {
+                            const mergedVal = filtered[i] * 2;
+                            res.push(mergedVal);
+                            score += mergedVal;
+                            i++;
+                        } else {
+                            res.push(filtered[i]);
+                        }
+                    }
+                    while (res.length < SIZE) {
+                        res.push(0);
+                    }
+                    return res;
+                }
+
+                if (direction === 'LEFT') {
+                    for (let r = 0; r < SIZE; r++) {
+                        const newRow = slideAndMerge(board[r]);
+                        board[r] = newRow;
+                    }
+                } else if (direction === 'RIGHT') {
+                    for (let r = 0; r < SIZE; r++) {
+                        const reversed = [...board[r]].reverse();
+                        const newRow = slideAndMerge(reversed).reverse();
+                        board[r] = newRow;
+                    }
+                } else if (direction === 'UP') {
+                    for (let c = 0; c < SIZE; c++) {
+                        const col = [board[0][c], board[1][c], board[2][c], board[3][c]];
+                        const newCol = slideAndMerge(col);
+                        for (let r = 0; r < SIZE; r++) board[r][c] = newCol[r];
+                    }
+                } else if (direction === 'DOWN') {
+                    for (let c = 0; c < SIZE; c++) {
+                        const col = [board[3][c], board[2][c], board[1][c], board[0][c]];
+                        const newCol = slideAndMerge(col);
+                        for (let r = 0; r < SIZE; r++) board[r][c] = newCol[3 - r];
+                    }
+                }
+
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (prevBoard[r][c] !== board[r][c]) {
+                            moved = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (moved) {
+                    history = { board: prevBoard, score: prevScore };
+                    updateUndoButton();
+                    addRandomTile();
+                    renderBoard();
+                    checkGameState();
+                }
+            }
+
+            function checkGameState() {
+                let movesAvailable = false;
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (board[r][c] === 0) movesAvailable = true;
+                        if (r < SIZE - 1 && board[r][c] === board[r + 1][c]) movesAvailable = true;
+                        if (c < SIZE - 1 && board[r][c] === board[r][c + 1]) movesAvailable = true;
+                    }
+                }
+
+                if (!movesAvailable) {
+                    overlayTitle.textContent = 'Game Over!';
+                    overlayMsg.textContent = `Final Score: ${score}`;
+                    overlay.classList.add('active');
+                }
+            }
+
+            window.addEventListener('keydown', (e) => {
+                if (['ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); move('UP'); }
+                if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); move('DOWN'); }
+                if (['ArrowLeft', 'KeyA'].includes(e.code)) { e.preventDefault(); move('LEFT'); }
+                if (['ArrowRight', 'KeyD'].includes(e.code)) { e.preventDefault(); move('RIGHT'); }
+            });
+
+            let startX = 0, startY = 0;
+            boardWrapper.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            boardWrapper.addEventListener('touchend', (e) => {
+                if (!startX || !startY) return;
+                const diffX = e.changedTouches[0].clientX - startX;
+                const diffY = e.changedTouches[0].clientY - startY;
+
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (Math.abs(diffX) > 30) move(diffX > 0 ? 'RIGHT' : 'LEFT');
+                } else {
+                    if (Math.abs(diffY) > 30) move(diffY > 0 ? 'DOWN' : 'UP');
+                }
+                startX = 0; startY = 0;
+            }, { passive: true });
+
+            restartBtn.addEventListener('click', initGame);
+            overlayRestartBtn.addEventListener('click', initGame);
+            undoBtn.addEventListener('click', undoMove);
+
+            initGame();
+        });
+    </script>
+</body>
+</html>

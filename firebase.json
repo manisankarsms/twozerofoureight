@@ -1,0 +1,10 @@
+{
+  "hosting": {
+    "public": "2048 Website",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
