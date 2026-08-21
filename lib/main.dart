@@ -51,7 +51,7 @@ class TwoZeroFourEightApp extends StatelessWidget {
         return MaterialApp(
           title: '2048',
           navigatorObservers: [
-            analyticsObserver?,
+            ?analyticsObserver,
           ],
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,

@@ -10,8 +10,7 @@ class PurchaseService extends ChangeNotifier {
   PurchaseService._();
   static final PurchaseService instance = PurchaseService._();
 
-  static const removeAdsProductId =
-      'com.benbelabs.twozerofoureight.remove_ads';
+  static const removeAdsProductId = 'remove_ads';
 
   final InAppPurchase _store = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;

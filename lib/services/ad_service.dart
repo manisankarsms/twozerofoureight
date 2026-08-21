@@ -38,6 +38,15 @@ class AdService {
   Future<void> initialize() async {
     if (!isConfigured) return;
     await MobileAds.instance.initialize();
+
+    // COPPA compliance: app is rated for everyone including children.
+    MobileAds.instance.updateRequestConfiguration(
+      RequestConfiguration(
+        tagForChildDirectedTreatment: TagForChildDirectedTreatment.yes,
+        maxAdContentRating: MaxAdContentRating.g,
+      ),
+    );
+
     await _loadInterstitial();
   }
 

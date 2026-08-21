@@ -3,10 +3,10 @@
         android:label="2048"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <!-- Google's test application ID. Replace before a production release. -->
+        <!-- Production AdMob application ID. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-6328220943102530~9242079081" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -15,6 +15,13 @@ if (file("google-services.json").isFile) {
     apply(plugin = "com.google.firebase.crashlytics")
 }
 
+// Google Mobile Ads currently resolves WorkManager 2.7.0 transitively. Use the
+// modern stable runtime so Android 16 can recover from transient SQLite errors
+// while initializing the Ads SDK before Flutter starts.
+dependencies {
+    implementation("androidx.work:work-runtime:2.11.2")
+}
+
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
