@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../data/save_manager.dart';
+import 'receipt_validator.dart';
 
 /// Handles the non-consumable purchase that disables interstitial ads.
 class PurchaseService extends ChangeNotifier {
@@ -14,6 +15,11 @@ class PurchaseService extends ChangeNotifier {
 
   final InAppPurchase _store = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
+
+  /// Verifies purchases before granting the entitlement. Swap this for a
+  /// [ServerReceiptValidator] before a production launch — see
+  /// receipt_validator.dart.
+  final ReceiptValidator _validator = const LocalReceiptValidator();
 
   ProductDetails? removeAdsProduct;
   bool isAvailable = false;
@@ -88,9 +94,15 @@ class PurchaseService extends ChangeNotifier {
       switch (purchase.status) {
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          // Add server-side receipt validation before a production launch.
-          await SaveManager.instance.setAdsRemoved(true);
-          message = 'Ads have been removed. Thank you for your support!';
+          // The entitlement is only granted after the validator confirms the
+          // receipt. LocalReceiptValidator trusts the store; replace it with a
+          // ServerReceiptValidator to verify against a backend before launch.
+          if (await _validator.isValid(purchase)) {
+            await SaveManager.instance.setAdsRemoved(true);
+            message = 'Ads have been removed. Thank you for your support!';
+          } else {
+            message = 'We could not verify this purchase. Please try again.';
+          }
         case PurchaseStatus.error:
           message = 'The purchase could not be completed. Please try again.';
         case PurchaseStatus.canceled:

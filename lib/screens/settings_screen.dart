@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/save_manager.dart';
@@ -15,14 +16,29 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static final _privacyPolicyUri = Uri.parse('https://twozero48.web.app/privacy.html');
+  static final _privacyPolicyUri = Uri.parse(
+    'https://twozero48.web.app/privacy.html',
+  );
   final _purchases = PurchaseService.instance;
+
+  /// App version, resolved from the platform bundle at runtime so it always
+  /// matches the build rather than a hardcoded string.
+  String _versionLabel = '';
 
   @override
   void initState() {
     super.initState();
     _purchases.addListener(_refresh);
     SaveManager.instance.addListener(_refresh);
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    setState(() {
+      _versionLabel = 'Version ${info.version} (${info.buildNumber})';
+    });
   }
 
   @override
@@ -61,7 +77,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showMessage() {
     final message = _purchases.message;
     if (message != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -85,7 +103,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               title: Text('Dark theme', style: _titleStyle),
               subtitle: Text(
-                AppColors.isDark ? 'Use the light appearance' : 'Use the dark appearance',
+                AppColors.isDark
+                    ? 'Use the light appearance'
+                    : 'Use the dark appearance',
                 style: _subtitleStyle,
               ),
               value: AppColors.isDark,
@@ -118,19 +138,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: _subtitleStyle,
                   ),
                   trailing: adsRemoved
-                      ? const Icon(Icons.check_circle_rounded, color: Colors.green)
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.green,
+                        )
                       : _purchases.isBusy
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : FilledButton(
-                              onPressed: _purchases.removeAdsProduct == null
-                                  ? null
-                                  : _buyRemoveAds,
-                              child: Text(_purchases.removeAdsProduct?.price ?? 'Buy'),
-                            ),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : FilledButton(
+                          onPressed: _purchases.removeAdsProduct == null
+                              ? null
+                              : _buyRemoveAds,
+                          child: Text(
+                            _purchases.removeAdsProduct?.price ?? 'Buy',
+                          ),
+                        ),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -138,7 +163,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   enabled: !_purchases.isBusy,
                   leading: const Icon(Icons.restore_rounded),
                   title: Text('Restore Purchases', style: _titleStyle),
-                  subtitle: Text('Restore a previous Remove Ads purchase.', style: _subtitleStyle),
+                  subtitle: Text(
+                    'Restore a previous Remove Ads purchase.',
+                    style: _subtitleStyle,
+                  ),
                   onTap: _restorePurchases,
                 ),
               ],
@@ -153,7 +181,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   leading: const Icon(Icons.info_outline_rounded),
                   title: Text('2048', style: _titleStyle),
-                  subtitle: Text('Version 1.0.0 (1)', style: _subtitleStyle),
+                  subtitle: Text(
+                    _versionLabel.isEmpty ? 'Version…' : _versionLabel,
+                    style: _subtitleStyle,
+                  ),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -176,15 +207,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   TextStyle get _titleStyle => TextStyle(
-        color: AppColors.textDark,
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
-      );
+    color: AppColors.textDark,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+  );
 
-  TextStyle get _subtitleStyle => TextStyle(
-        color: AppColors.textDark.withValues(alpha: .7),
-        fontSize: 13,
-      );
+  TextStyle get _subtitleStyle =>
+      TextStyle(color: AppColors.textDark.withValues(alpha: .7), fontSize: 13);
 }
 
 class _SectionTitle extends StatelessWidget {

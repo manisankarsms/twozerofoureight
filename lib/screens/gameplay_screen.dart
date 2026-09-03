@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -107,9 +108,37 @@ class _GameplayScreenState extends State<GameplayScreen>
     _controller.continueGame();
   }
 
+  /// Leaves the game from the overlay. State is already persisted, so the home
+  /// screen reflects the latest board (or a cleared session after a loss).
+  void _exitToHome() {
+    if (!mounted) return;
+    setState(() => _isExiting = true);
+    Navigator.of(context).pop();
+  }
+
   void _handleSwipe(MoveDirection direction) {
     final moved = _controller.move(direction);
     if (moved) HapticFeedback.lightImpact();
+  }
+
+  void _onVerticalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity;
+    if (velocity == null) return;
+    if (velocity < -100) {
+      _handleSwipe(MoveDirection.up);
+    } else if (velocity > 100) {
+      _handleSwipe(MoveDirection.down);
+    }
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity;
+    if (velocity == null) return;
+    if (velocity < -100) {
+      _handleSwipe(MoveDirection.left);
+    } else if (velocity > 100) {
+      _handleSwipe(MoveDirection.right);
+    }
   }
 
   @override
@@ -118,15 +147,47 @@ class _GameplayScreenState extends State<GameplayScreen>
       canPop: _isExiting,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              const Spacer(),
-              _buildBoard(context),
-              const Spacer(flex: 2),
-            ],
-          ),
+        body: Stack(
+          children: [
+            SafeArea(
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  // Swipes anywhere below the header move the board, including
+                  // the empty space under it, so short flicks off the grid
+                  // still count.
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragEnd: _onVerticalDragEnd,
+                      onHorizontalDragEnd: _onHorizontalDragEnd,
+                      child: Column(
+                        children: [
+                          const Spacer(),
+                          _buildBoard(context),
+                          const Spacer(flex: 2),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_controller.status != GameStatus.playing)
+              _GameEndOverlay(
+                child: GameOverDialog(
+                  won: _controller.status == GameStatus.won,
+                  score: _controller.score,
+                  bestScore: _save.bestScoreFor(_controller.goal),
+                  goal: _controller.goal,
+                  onNewGame: _onNewGame,
+                  onExit: _exitToHome,
+                  onContinue: _controller.status == GameStatus.won
+                      ? _onContinue
+                      : null,
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -186,93 +247,55 @@ class _GameplayScreenState extends State<GameplayScreen>
     const spacing = 8.0;
     final tileSize =
         (boardSize - spacing * (GameController.gridSize + 1)) /
-            GameController.gridSize;
+        GameController.gridSize;
 
-    return GestureDetector(
-      onVerticalDragEnd: (details) {
-        if (details.primaryVelocity == null) return;
-        if (details.primaryVelocity! < -100) {
-          _handleSwipe(MoveDirection.up);
-        } else if (details.primaryVelocity! > 100) {
-          _handleSwipe(MoveDirection.down);
-        }
-      },
-      onHorizontalDragEnd: (details) {
-        if (details.primaryVelocity == null) return;
-        if (details.primaryVelocity! < -100) {
-          _handleSwipe(MoveDirection.left);
-        } else if (details.primaryVelocity! > 100) {
-          _handleSwipe(MoveDirection.right);
-        }
-      },
-      child: Stack(
-        children: [
-          Container(
-            width: boardSize,
-            height: boardSize,
-            padding: const EdgeInsets.all(spacing),
-            decoration: BoxDecoration(
-              color: AppColors.boardBackground,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: GameController.gridSize,
-                mainAxisSpacing: spacing,
-                crossAxisSpacing: spacing,
-              ),
-              itemCount: GameController.gridSize * GameController.gridSize,
-              itemBuilder: (context, index) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.emptyCell,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                );
-              },
-            ),
+    return Stack(
+      children: [
+        Container(
+          width: boardSize,
+          height: boardSize,
+          padding: const EdgeInsets.all(spacing),
+          decoration: BoxDecoration(
+            color: AppColors.boardBackground,
+            borderRadius: BorderRadius.circular(8),
           ),
-          SizedBox(
-            width: boardSize,
-            height: boardSize,
-            child: Stack(
-              children: _controller.tiles.map((tile) {
-                final left = spacing + tile.col * (tileSize + spacing);
-                final top = spacing + tile.row * (tileSize + spacing);
-                return AnimatedPositioned(
-                  key: ValueKey(tile.id),
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeInOut,
-                  left: left,
-                  top: top,
-                  child: AnimatedScale(
-                    duration: const Duration(milliseconds: 200),
-                    scale: tile.merged ? 1.1 : 1.0,
-                    curve: Curves.easeOut,
-                    child: TileWidget(tile: tile, size: tileSize),
-                  ),
-                );
-              }).toList(),
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: GameController.gridSize,
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
             ),
+            itemCount: GameController.gridSize * GameController.gridSize,
+            itemBuilder: (context, index) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: AppColors.emptyCell,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              );
+            },
           ),
-          if (_controller.status != GameStatus.playing)
-            SizedBox(
-              width: boardSize,
-              height: boardSize,
-              child: GameOverDialog(
-                won: _controller.status == GameStatus.won,
-                score: _controller.score,
-                bestScore: _save.bestScoreFor(_controller.goal),
-                goal: _controller.goal,
-                onNewGame: _onNewGame,
-                onContinue: _controller.status == GameStatus.won
-                    ? _onContinue
-                    : null,
-              ),
-            ),
-        ],
-      ),
+        ),
+        SizedBox(
+          width: boardSize,
+          height: boardSize,
+          child: Stack(
+            children: _controller.tiles.map((tile) {
+              final left = spacing + tile.col * (tileSize + spacing);
+              final top = spacing + tile.row * (tileSize + spacing);
+              return AnimatedPositioned(
+                key: ValueKey(tile.id),
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeInOut,
+                left: left,
+                top: top,
+                child: TileWidget(tile: tile, size: tileSize),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -310,6 +333,71 @@ class _ScoreBox extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Full-screen backdrop that blurs and dims the game, then eases the
+/// end-of-game card in with a synchronized fade + scale.
+class _GameEndOverlay extends StatefulWidget {
+  const _GameEndOverlay({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_GameEndOverlay> createState() => _GameEndOverlayState();
+}
+
+class _GameEndOverlayState extends State<_GameEndOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+  )..forward();
+
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOut,
+  );
+
+  late final Animation<double> _scale = Tween<double>(
+    begin: 0.88,
+    end: 1,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: FadeTransition(
+        opacity: _fade,
+        child: AnimatedBuilder(
+          animation: _fade,
+          builder: (context, child) {
+            final t = _fade.value;
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 6 * t, sigmaY: 6 * t),
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.55 * t),
+                child: child,
+              ),
+            );
+          },
+          child: Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: ScaleTransition(scale: _scale, child: widget.child),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -16,11 +16,22 @@ class _HomeScreenState extends State<HomeScreen> {
   SaveManager get _save => SaveManager.instance;
   int _selectedGoal = 2048;
 
+  /// Whether the selected mode matches the resumable session. When it doesn't
+  /// (the player picked a different goal), the primary action starts a fresh
+  /// game in the selected mode instead of continuing the old one.
+  bool get _canContinue =>
+      _save.hasActiveSession && _save.save.goal == _selectedGoal;
+
   @override
   void initState() {
     super.initState();
     themeNotifier.addListener(_onStateChanged);
     _save.addListener(_onStateChanged);
+    // Preselect the resumable session's goal so the chips reflect the game the
+    // player can continue, rather than defaulting to 2048.
+    if (_save.hasActiveSession) {
+      _selectedGoal = _save.save.goal;
+    }
   }
 
   @override
@@ -32,13 +43,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onStateChanged() {
     if (!mounted) return;
+    // Rebuild after the current frame so the ancestor MaterialApp/AnimatedTheme
+    // has already applied the new theme. Rebuilding in the same frame as a
+    // theme toggle can read a half-applied theme and paint the "2048" title
+    // with the wrong color after a dark -> light switch.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() {});
     });
   }
 
   Future<void> _startGame({bool startNewGame = false}) async {
-    final needsGoal = startNewGame || !_save.hasActiveSession;
+    // Start fresh when explicitly requested, when there is no session, or when
+    // the player selected a mode different from the resumable session. Only a
+    // matching goal resumes the saved board.
+    final needsGoal = startNewGame || !_canContinue;
     await Navigator.of(context).push(
       MaterialPageRoute(
         settings: const RouteSettings(name: '/gameplay'),
@@ -61,8 +79,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasSession = _save.hasActiveSession;
-    final activeGoal = hasSession ? _save.save.goal : _selectedGoal;
+    // The selected chip drives the whole screen. A session resumes only when
+    // its goal matches the selection (_canContinue).
+    final canContinue = _canContinue;
+    final activeGoal = _selectedGoal;
     final best = _save.bestScoreFor(activeGoal);
 
     return Scaffold(
@@ -82,16 +102,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Spacer(),
                       IconButton(
                         onPressed: _toggleTheme,
-                        tooltip: AppColors.isDark ? 'Use light theme' : 'Use dark theme',
+                        tooltip: AppColors.isDark
+                            ? 'Use light theme'
+                            : 'Use dark theme',
                         icon: Icon(
-                          AppColors.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                          AppColors.isDark
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
                           color: AppColors.textDark,
                         ),
                       ),
                       IconButton(
-                        onPressed: () => Navigator.of(context).pushNamed('/settings'),
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/settings'),
                         tooltip: 'Settings',
-                        icon: Icon(Icons.settings_outlined, color: AppColors.textDark),
+                        icon: Icon(
+                          Icons.settings_outlined,
+                          color: AppColors.textDark,
+                        ),
                       ),
                     ],
                   ),
@@ -101,17 +129,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildTilePreview(),
                   const SizedBox(height: 16),
                   Text(
-                    hasSession ? 'Your game is ready to continue.' : 'Choose a goal and start playing.',
+                    canContinue
+                        ? 'Your game is ready to continue.'
+                        : 'Choose a goal and start playing.',
                     textAlign: TextAlign.center,
                     style: AppTheme.subtitle.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 20),
-                  _buildStats(best, hasSession),
+                  _buildStats(best, canContinue),
                   const SizedBox(height: 28),
                   _buildGoalSelector(),
                   const SizedBox(height: 28),
-                  _buildPrimaryAction(hasSession),
-                  if (hasSession) ...[
+                  _buildPrimaryAction(canContinue),
+                  if (canContinue) ...[
                     const SizedBox(height: 12),
                     _buildNewGameAction(),
                   ],
@@ -181,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStats(int best, bool hasSession) {
+  Widget _buildStats(int best, bool canContinue) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -193,8 +223,8 @@ class _HomeScreenState extends State<HomeScreen> {
           color: AppColors.textDark.withValues(alpha: .2),
         ),
         _Stat(
-          label: hasSession ? 'CURRENT' : 'MODE',
-          value: hasSession ? '${_save.save.currentScore}' : '$_selectedGoal',
+          label: canContinue ? 'CURRENT' : 'MODE',
+          value: canContinue ? '${_save.save.currentScore}' : '$_selectedGoal',
         ),
       ],
     );
@@ -207,65 +237,80 @@ class _HomeScreenState extends State<HomeScreen> {
       (512, 'Easy'),
       (256, 'Quick'),
     ];
+    // Fit all four goals across the available width so none scroll off-screen
+    // on narrow devices (256 previously overflowed the right edge).
     return SizedBox(
       height: 48,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: goals.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final goal = goals[index];
-          final selected = goal.$1 == _selectedGoal;
-          return Semantics(
-            button: true,
-            selected: selected,
-            label: '${goal.$1} ${goal.$2} goal',
-            child: Material(
-              color: selected ? AppColors.accent : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => setState(() => _selectedGoal = goal.$1),
-                child: Container(
-                  width: 96,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: selected ? AppColors.accent : AppColors.textDark.withValues(alpha: .28),
-                    ),
-                  ),
-                  child: Text(
-                    '${goal.$1}',
-                    style: TextStyle(
-                      color: selected ? Colors.white : AppColors.textDark,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+      child: Row(
+        children: [
+          for (var i = 0; i < goals.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(child: _buildGoalChip(goals[i])),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildPrimaryAction(bool hasSession) {
+  Widget _buildGoalChip((int, String) goal) {
+    final selected = goal.$1 == _selectedGoal;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${goal.$1} ${goal.$2} goal',
+      child: Material(
+        color: selected ? AppColors.accent : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => setState(() => _selectedGoal = goal.$1),
+          child: Container(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected
+                    ? AppColors.accent
+                    : AppColors.textDark.withValues(alpha: .28),
+              ),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  '${goal.$1}',
+                  style: TextStyle(
+                    color: selected ? Colors.white : AppColors.textDark,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryAction(bool canContinue) {
     return SizedBox(
       height: 54,
       child: ElevatedButton(
         onPressed: _startGame,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.isDark ? const Color(0xFF3C3A32) : Colors.white,
+          foregroundColor: AppColors.isDark
+              ? const Color(0xFF3C3A32)
+              : Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: Text(
-          hasSession ? 'Continue Game' : 'Start Game',
+          canContinue ? 'Continue Game' : 'Start Game',
           style: AppTheme.button,
         ),
       ),
@@ -279,7 +324,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () => _startGame(startNewGame: true),
         child: Text(
           'New Game',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: AppColors.textDark,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
